@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerrariaDB</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0f0e14;
+  --surface: #17151f;
+  --card:    #1e1b2a;
+  --border:  #2a2540;
+  --accent:  #a855f7;
+  --gold:    #f59e0b;
+  --green:   #10b981;
+  --red:     #ef4444;
+  --blue:    #3b82f6;
+  --cyan:    #06b6d4;
+  --text:    #e2dff0;
+  --muted:   #6b6484;
+  --sidebar: 210px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* TOPBAR */
+#topbar{
+  height:52px;background:#09080f;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;padding:0 16px;
+  position:relative;z-index:100;flex-shrink:0;
+}
+.logo{
+  font-family:'Press Start 2P',monospace;font-size:9px;color:var(--accent);
+  text-shadow:0 0 18px rgba(168,85,247,.5);white-space:nowrap;
+  display:flex;align-items:center;gap:7px;flex-shrink:0;
+}
+.search-wrap{flex:1;max-width:480px;position:relative}
+.search-wrap input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:'Nunito',sans-serif;
+  font-size:14px;font-weight:700;padding:7px 14px 7px 36px;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,85,247,.15)}
+.search-wrap input::placeholder{color:var(--muted)}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.count-badge{
+  margin-left:auto;font-size:11px;font-weight:800;color:var(--muted);
+  background:var(--surface);border:1px solid var(--border);
+  padding:3px 10px;border-radius:5px;white-space:nowrap;flex-shrink:0;
+}
+.count-badge span{color:var(--accent)}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 52px);overflow:hidden}
+
+/* SIDEBAR */
+#sidebar{
+  width:var(--sidebar);background:#09080f;border-right:1px solid var(--border);
+  overflow-y:auto;flex-shrink:0;
+}
+.sb-head{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);padding:14px 14px 6px}
+.sb-btn{
+  display:flex;align-items:center;gap:9px;padding:9px 14px;
+  font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;
+  border-left:3px solid transparent;transition:all .1s;user-select:none;
+}
+.sb-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.sb-btn.active{color:var(--accent);background:rgba(168,85,247,.07);border-left-color:var(--accent)}
+.sb-btn.active .sb-n{color:var(--accent);background:rgba(168,85,247,.18)}
+.sb-ico{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-n{margin-left:auto;font-size:10px;font-weight:800;padding:1px 6px;border-radius:3px;background:var(--surface);color:var(--border)}
+.sb-hr{height:1px;background:var(--border);margin:6px 12px}
+
+/* MAIN */
+#main{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+
+/* PAGE HEADER */
+.pg-hd{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.pg-title{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--text);line-height:1.6}
+.pg-sub{font-size:12px;color:var(--muted);font-weight:700}
+
+/* FILTERS */
+.filters{display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
+.fchip{
+  font-size:12px;font-weight:700;padding:4px 11px;border-radius:5px;
+  border:1px solid var(--border);background:var(--surface);color:var(--muted);
+  cursor:pointer;transition:all .1s;font-family:'Nunito',sans-serif;
+}
+.fchip:hover{color:var(--text);border-color:var(--muted)}
+.fchip.on{background:rgba(168,85,247,.14);border-color:var(--accent);color:var(--accent)}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:9px}
+
+/* CARD */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  overflow:hidden;cursor:pointer;
+  transition:transform .12s,box-shadow .12s,border-color .12s;
+  animation:fadeUp .18s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(168,85,247,.45);
+  box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 0 1px rgba(168,85,247,.18);
+}
+.card-top{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 12px 10px;border-bottom:1px solid var(--border);
+}
+.c-img{
+  width:42px;height:42px;background:#09080f;border-radius:6px;
+  border:1px solid var(--border);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;overflow:hidden;
+}
+.c-img img{width:32px;height:32px;image-rendering:pixelated;object-fit:contain}
+.c-info{flex:1;min-width:0}
+.c-name{font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-type{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px;text-transform:capitalize}
+.card-body{padding:9px 12px}
+.c-stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;font-size:11.5px;margin-bottom:6px}
+.cs{display:flex;justify-content:space-between;gap:4px}
+.cs-k{color:var(--muted);font-weight:600;white-space:nowrap}
+.cs-v{font-weight:800;white-space:nowrap}
+.c-tip{font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  margin-bottom:6px;font-style:italic}
+.c-tags{display:flex;flex-wrap:wrap;gap:3px}
+.tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;
+  background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+.tag.hm{color:#fb923c;border-color:rgba(251,146,60,.3);background:rgba(251,146,60,.07)}
+
+/* RARITY */
+.rar{font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;border:1px solid;flex-shrink:0;white-space:nowrap}
+.r-1{color:#aaa;border-color:#333;background:rgba(150,150,150,.08)}
+.r0{color:#ddd;border-color:#555;background:rgba(220,220,220,.06)}
+.r1{color:#fff;border-color:#888;background:rgba(255,255,255,.07)}
+.r2{color:#7ecef4;border-color:#2563eb;background:rgba(126,206,244,.08)}
+.r3{color:#a5fb78;border-color:#16a34a;background:rgba(165,251,120,.08)}
+.r4{color:#ff9a3c;border-color:#c2410c;background:rgba(255,154,60,.08)}
+.r5{color:#f87171;border-color:#dc2626;background:rgba(248,113,113,.08)}
+.r6{color:#c084fc;border-color:#7c3aed;background:rgba(192,132,252,.08)}
+.r7{color:#f5da4b;border-color:#b45309;background:rgba(245,218,75,.08)}
+.r8{color:#fca5a5;border-color:#e11d48;background:rgba(252,165,165,.08)}
+.r9{color:#fbbf24;border-color:#92400e;background:rgba(251,191,36,.08)}
+.r10{color:#f9a8d4;border-color:#db2777;background:rgba(249,168,212,.08)}
+.r11{color:#fff;border-color:#aaa;background:rgba(255,255,255,.08)}
+
+/* PAGINATION */
+.pager{display:flex;align-items:center;gap:8px;flex-shrink:0;padding-bottom:4px}
+.pager button{
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--muted);padding:6px 14px;border-radius:5px;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;transition:all .1s;
+}
+.pager button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pager button:disabled{opacity:.3;cursor:not-allowed}
+.pager-info{font-size:12px;color:var(--muted);font-weight:700}
+.pager-jump{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--muted);font-weight:700;
+}
+.pager-jump input{
+  width:54px;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-family:'Nunito',sans-serif;font-size:12px;
+  font-weight:700;padding:4px 8px;border-radius:5px;outline:none;text-align:center;
+}
+.pager-jump input:focus{border-color:var(--accent)}
+
+/* LOADER */
+.loader{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;flex:1;gap:16px;
+}
+.spinner{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-txt{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--accent);
+  animation:blink 1s infinite;letter-spacing:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.82);
+  backdrop-filter:blur(7px);z-index:500;display:none;
+  align-items:center;justify-content:center;padding:20px}
+.mbg.open{display:flex}
+.modal{
+  background:var(--card);border:1px solid var(--accent);border-radius:10px;
+  box-shadow:0 0 60px rgba(168,85,247,.22);
+  width:100%;max-width:660px;max-height:90vh;
+  overflow-y:auto;position:relative;animation:popIn .17s ease;
+}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.modal::-webkit-scrollbar{width:4px}
+.m-close{
+  position:absolute;top:12px;right:12px;background:var(--surface);
+  border:1px solid var(--border);border-radius:6px;color:var(--muted);
+  font-size:15px;width:28px;height:28px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;transition:all .12s;z-index:10;
+}
+.m-close:hover{background:rgba(239,68,68,.12);border-color:var(--red);color:var(--red)}
+.m-hero{
+  background:linear-gradient(135deg,#1a1530,#09080f);
+  border-radius:10px 10px 0 0;padding:20px;
+  display:flex;gap:16px;border-bottom:1px solid var(--border);
+}
+.m-ico{
+  width:72px;height:72px;background:#09080f;border-radius:8px;
+  border:1px solid var(--border);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;overflow:hidden;
+}
+.m-ico img{width:56px;height:56px;image-rendering:pixelated;object-fit:contain}
+.m-title{font-size:16px;font-weight:800;color:#fff;margin-bottom:3px;line-height:1.3}
+.m-sub{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;text-transform:capitalize}
+.m-body{padding:18px}
+.msec{margin-bottom:16px}
+.msec-h{
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--accent);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);
+}
+.stbl{width:100%;border-collapse:collapse;font-size:13px;font-weight:600}
+.stbl tr:not(:last-child) td{border-bottom:1px solid rgba(255,255,255,.04)}
+.stbl td{padding:5px 3px}
+.stbl td:first-child{color:var(--muted);width:40%}
+.tip-box{
+  background:rgba(0,0,0,.3);border-radius:6px;border-left:3px solid var(--accent);
+  padding:10px 13px;font-size:13px;font-weight:600;line-height:1.7;
+  color:var(--text);font-style:italic;
+}
+.craft-row,.drop-row,.vendor-row{
+  display:flex;flex-direction:column;gap:4px;
+  padding:9px 11px;background:rgba(0,0,0,.2);
+  border-radius:6px;border:1px solid var(--border);margin-bottom:6px;
+  font-size:12px;font-weight:700;
+}
+.craft-row-title,.drop-from,.vendor-name{color:var(--text);margin-bottom:3px;font-size:13px}
+.ingredients{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.ingr{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface);border:1px solid var(--border);
+  padding:3px 8px;border-radius:4px;font-size:11px;
+}
+.ingr-qty{color:var(--gold);font-weight:800}
+.station{color:var(--muted);font-size:11px;margin-top:3px}
+.drop-rate{color:var(--gold);margin-left:auto}
+.drop-item-row{display:flex;align-items:center;gap:6px}
+.wiki-btn{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 14px;
+  border-radius:6px;background:rgba(59,130,246,.09);
+  border:1px solid rgba(59,130,246,.28);color:var(--blue);
+  font-size:12px;font-weight:700;text-decoration:none;transition:all .15s;
+}
+.wiki-btn:hover{background:rgba(59,130,246,.18)}
+</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;height:100vh">
+
+<div id="topbar">
+  <div class="logo">⛏ TerrariaDB</div>
+  <div class="search-wrap">
+    <span class="search-ico">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search items…">
+  </div>
+  <div class="count-badge">Showing <span id="visCount">0</span> of <span id="totCount">0</span></div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sb-head">Categories</div>
+    <div class="sb-btn active" data-cat="all">
+      <span class="sb-ico">🌟</span>All Items<span class="sb-n" id="n-all">…</span>
+    </div>
+    <div class="sb-hr"></div>
+    <div class="sb-btn" data-cat="weapon">
+      <span class="sb-ico">⚔️</span>Weapons<span class="sb-n" id="n-weapon">…</span>
+    </div>
+    <div class="sb-btn" data-cat="armor">
+      <span class="sb-ico">🛡️</span>Armor<span class="sb-n" id="n-armor">…</span>
+    </div>
+    <div class="sb-btn" data-cat="accessory">
+      <span class="sb-ico">💍</span>Accessories<span class="sb-n" id="n-accessory">…</span>
+    </div>
+    <div class="sb-btn" data-cat="potion">
+      <span class="sb-ico">🧪</span>Potions<span class="sb-n" id="n-potion">…</span>
+    </div>
+    <div class="sb-btn" data-cat="tool">
+      <span class="sb-ico">⛏️</span>Tools<span class="sb-n" id="n-tool">…</span>
+    </div>
+    <div class="sb-hr"></div>
+    <div class="sb-btn" data-cat="boss summon">
+      <span class="sb-ico">💀</span>Boss Summons<span class="sb-n" id="n-boss summon">…</span>
+    </div>
+    <div class="sb-btn" data-cat="ammo">
+      <span class="sb-ico">🏹</span>Ammo<span class="sb-n" id="n-ammo">…</span>
+    </div>
+    <div class="sb-btn" data-cat="dye">
+      <span class="sb-ico">🎨</span>Dyes<span class="sb-n" id="n-dye">…</span>
+    </div>
+    <div class="sb-hr"></div>
+    <div class="sb-btn" data-cat="material">
+      <span class="sb-ico">📦</span>Materials<span class="sb-n" id="n-material">…</span>
+    </div>
+    <div class="sb-btn" data-cat="block">
+      <span class="sb-ico">🪨</span>Blocks<span class="sb-n" id="n-block">…</span>
+    </div>
+    <div class="sb-btn" data-cat="furniture">
+      <span class="sb-ico">🛋️</span>Furniture<span class="sb-n" id="n-furniture">…</span>
+    </div>
+    <div class="sb-btn" data-cat="vanity">
+      <span class="sb-ico">👒</span>Vanity<span class="sb-n" id="n-vanity">…</span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <div class="loader-txt">LOADING DATABASE…</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="mbg" id="mbg">
+  <div class="modal" id="modal">
+    <button class="m-close" onclick="closeModal()">✕</button>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+const DATA_URL = 'https://raw.githubusercontent.com/pinkgel/pinkgel.github.io/refs/heads/main/dataraw.json';
+const WIKI_IMG = 'https://terraria.wiki.gg';
+const WIKI_PAGE = 'https://terraria.wiki.gg/wiki/';
+const PER_PAGE = 60;
+
+const RARITY = ['Gray','White','Blue','Green','Orange','Red','Purple','Lime','Yellow','Cyan','Rainbow','Amber'];
+const RAR_CLASS = ['r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11'];
+
+// Coins: sell value in copper -> readable
+function coins(v) {
+  if (!v) return null;
+  const n = parseInt(v);
+  if (!n) return null;
+  const pl = Math.floor(n/1000000), go = Math.floor((n%1000000)/10000),
+        si = Math.floor((n%10000)/100), cu = n%100;
+  const parts = [];
+  if (pl) parts.push(pl+'p');
+  if (go) parts.push(go+'g');
+  if (si) parts.push(si+'s');
+  if (cu) parts.push(cu+'c');
+  return parts.join(' ') || null;
+}
+
+function rarClass(r) {
+  const i = parseInt(r);
+  if (isNaN(i)) return 'r0';
+  return RAR_CLASS[Math.max(0, Math.min(11, i))] || 'r0';
+}
+function rarName(r) {
+  const i = parseInt(r);
+  return (!isNaN(i) && RARITY[i]) ? RARITY[i] : '';
+}
+
+function imgSrc(item) {
+  if (item.image) return WIKI_IMG + item.image;
+  return null;
+}
+
+function typeLabel(item) {
+  if (item.type?.length) return item.type[0];
+  if (item.tag?.length)  return item.tag[0];
+  return 'item';
+}
+
+function statColor(k) {
+  k = k.toLowerCase();
+  if (k.includes('damage'))   return 'var(--red)';
+  if (k.includes('defence') || k.includes('defense')) return 'var(--blue)';
+  if (k.includes('speed') || k.includes('use time'))  return 'var(--cyan)';
+  if (k.includes('mana'))     return '#c084fc';
+  if (k.includes('crit'))     return 'var(--gold)';
+  if (k.includes('knockback'))return 'var(--green)';
+  if (k.includes('sell') || k.includes('buy')) return 'var(--gold)';
+  return 'var(--text)';
+}
+
+// Build stats object for a card
+function itemStats(item) {
+  const s = {};
+  if (item.damage)      s['Damage']     = item.damage + (item.damage_type ? ' ' + item.damage_type : '');
+  if (item.defence)     s['Defence']    = item.defence;
+  if (item.use_time)    s['Use Time']   = item.use_time;
+  if (item.knockback)   s['Knockback']  = item.knockback;
+  if (item.critical)    s['Crit']       = item.critical + '%';
+  if (item.mana)        s['Mana']       = item.mana;
+  if (item.pick)        s['Pickaxe']    = item.pick + '%';
+  if (item.axe)         s['Axe']        = item.axe + '%';
+  if (item.hammer)      s['Hammer']     = item.hammer + '%';
+  if (item.fishing)     s['Fishing']    = item.fishing;
+  if (item.bait)        s['Bait']       = item.bait + '%';
+  if (item.bonus)       s['Bonus']      = item.bonus;
+  if (item.hheal)       s['Heals HP']   = item.hheal;
+  if (item.mheal)       s['Heals MP']   = item.mheal;
+  const sell = coins(item.sell);
+  if (sell)             s['Sell']       = sell;
+  return s;
+}
+
+// Tags from item
+function itemTags(item) {
+  const tags = [];
+  if (item.hardmode === 'Yes') tags.push('Hardmode');
+  if (item.consumable === 'Yes') tags.push('Consumable');
+  if (item.autoswing === 'Yes') tags.push('Autoswing');
+  (item.tag || []).forEach(t => { if (t && t.trim()) tags.push(t.trim()); });
+  return [...new Set(tags)].slice(0, 5);
+}
+
+// ── STATE ──
+let allData   = [];
+let activeCat = 'all';
+let searchQ   = '';
+let activeTags = [];
+let page      = 0;
+
+function catMatches(item, cat) {
+  if (cat === 'all') return true;
+  const types = (item.type || []).map(t => t.toLowerCase());
+  const tags  = (item.tag  || []).map(t => t.toLowerCase());
+  const target = cat.toLowerCase();
+  return types.some(t => t.includes(target)) || tags.some(t => t.includes(target));
+}
+
+function getVisible() {
+  const q = searchQ.toLowerCase();
+  return allData.filter(item => {
+    if (!catMatches(item, activeCat)) return false;
+    if (q && !item.name.toLowerCase().includes(q) &&
+             !item.tooltip?.toLowerCase().includes(q) &&
+             !(item.tag||[]).join(' ').toLowerCase().includes(q)) return false;
+    if (activeTags.length > 0) {
+      const t = itemTags(item);
+      if (!activeTags.every(at => t.includes(at))) return false;
+    }
+    return true;
+  });
+}
+
+function getAllFilterTags(visible) {
+  const s = new Set();
+  visible.slice(0, 500).forEach(item => itemTags(item).forEach(t => s.add(t)));
+  return [...s].slice(0, 16);
+}
+
+function updateCounts() {
+  const cats = ['all','weapon','armor','accessory','potion','tool','boss summon','ammo','dye','material','block','furniture','vanity'];
+  cats.forEach(cat => {
+    const el = document.getElementById('n-' + cat);
+    if (el) el.textContent = allData.filter(i => catMatches(i, cat)).length;
+  });
+}
+
+// ── RENDER ──
+function render() {
+  const visible = getVisible();
+  const totalPages = Math.max(1, Math.ceil(visible.length / PER_PAGE));
+  if (page >= totalPages) page = 0;
+  const slice = visible.slice(page * PER_PAGE, (page+1) * PER_PAGE);
+  const tags  = getAllFilterTags(visible);
+
+  document.getElementById('visCount').textContent = visible.length;
+  document.getElementById('totCount').textContent = allData.length;
+
+  const activeSB = document.querySelector('.sb-btn.active');
+  const catLabel = activeSB ? activeSB.textContent.replace(/\d+/g,'').trim() : 'All Items';
+
+  let html = `
+    <div class="pg-hd">
+      <div class="pg-title">${catLabel}</div>
+      <div class="pg-sub">${visible.length.toLocaleString()} items</div>
+    </div>`;
+
+  if (tags.length) {
+    html += `<div class="filters">${tags.map(t =>
+      `<button class="fchip${activeTags.includes(t)?' on':''}" onclick="toggleTag(${JSON.stringify(t)})">${t}</button>`
+    ).join('')}</div>`;
+  }
+
+  if (slice.length === 0) {
+    html += `<div style="text-align:center;padding:60px;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:12px">🔍</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text)">No results</div>
+    </div>`;
+  } else {
+    html += `<div class="grid">${slice.map((item, i) => renderCard(item, i)).join('')}</div>`;
+  }
+
+  if (totalPages > 1) {
+    html += `<div class="pager">
+      <button onclick="goPage(-1)"${page===0?' disabled':''}>← Prev</button>
+      <span class="pager-info">Page ${page+1} / ${totalPages}</span>
+      <button onclick="goPage(1)"${page>=totalPages-1?' disabled':''}>Next →</button>
+      <div class="pager-jump">Go to: <input type="number" min="1" max="${totalPages}" value="${page+1}"
+        onchange="jumpPage(this.value,${totalPages})"></div>
+    </div>`;
+  }
+
+  const main = document.getElementById('main');
+  main.innerHTML = html;
+}
+
+function renderCard(item, i) {
+  const stats = Object.entries(itemStats(item)).slice(0, 4);
+  const tags  = itemTags(item);
+  const src   = imgSrc(item);
+  const delay = Math.min(i, 30) * 0.022;
+  const rc    = rarClass(item.rare);
+  const rn    = rarName(item.rare);
+
+  return `<div class="card" onclick='openModal(${item.item_id || 0}, ${JSON.stringify(item.name).replace(/'/g,"\\'")})'
+    style="animation-delay:${delay}s" data-id="${item.item_id}" data-name="${item.name.replace(/"/g,'&quot;')}">
+    <div class="card-top">
+      <div class="c-img">
+        ${src ? `<img src="${src}" alt="" loading="lazy" onerror="this.style.display='none'">` : '📦'}
+      </div>
+      <div class="c-info">
+        <div class="c-name">${item.name}</div>
+        <div class="c-type">${typeLabel(item)}</div>
+      </div>
+      ${rn ? `<div class="rar ${rc}">${rn}</div>` : ''}
+    </div>
+    <div class="card-body">
+      ${stats.length ? `<div class="c-stats">${stats.map(([k,v]) =>
+        `<div class="cs"><span class="cs-k">${k}</span><span class="cs-v" style="color:${statColor(k)}">${v}</span></div>`
+      ).join('')}</div>` : ''}
+      ${item.tooltip ? `<div class="c-tip">"${item.tooltip}"</div>` : ''}
+      <div class="c-tags">
+        ${tags.map(t => `<span class="tag${t==='Hardmode'?' hm':''}">${t}</span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MODAL ──
+// Use a lookup map for fast access
+let nameMap = {};
+
+function openModal(id, name) {
+  const item = nameMap[name] || allData.find(i => i.item_id === id || i.name === name);
+  if (!item) return;
+
+  const src = imgSrc(item);
+  const stats = itemStats(item);
+  const tags  = itemTags(item);
+  const rc = rarClass(item.rare);
+  const rn = rarName(item.rare);
+  const wikiUrl = WIKI_PAGE + encodeURIComponent((item.page || item.name).replace(/ /g,'_'));
+
+  // Stats table
+  const statsHtml = Object.entries(stats).map(([k,v]) =>
+    `<tr><td>${k}</td><td style="color:${statColor(k)};font-weight:800">${v}</td></tr>`
+  ).join('');
+
+  // Crafting
+  const craftsHtml = (item.crafts || []).map(c => `
+    <div class="craft-row">
+      <div class="craft-row-title">→ ${c.result} ×${c.amount}</div>
+      <div class="station">Station: ${c.station}</div>
+      <div class="ingredients">
+        ${(c.ingredients||[]).map(([ing,qty]) =>
+          `<div class="ingr">${ing} <span class="ingr-qty">×${qty}</span></div>`
+        ).join('')}
+      </div>
+    </div>`).join('');
+
+  // Drops
+  const dropsHtml = (item.drops || []).map(d => `
+    <div class="drop-row">
+      <div class="drop-item-row">
+        <div class="drop-from">${d.page}</div>
+        <div class="drop-rate">${d.m_rate || d.n_rate || d.e_rate || '?'}</div>
+      </div>
+      ${d.normal==='Yes'?'<span class="tag">Normal</span>':''}
+      ${d.expert==='Yes'?'<span class="tag">Expert</span>':''}
+      ${d.master==='Yes'?'<span class="tag">Master</span>':''}
+    </div>`).join('');
+
+  // Vendors
+  const vendorsHtml = (item.vendors || []).map(v => `
+    <div class="vendor-row">
+      <div class="vendor-name">${v.npc || v.vendor || 'Vendor'}</div>
+      ${coins(v.price || item.buy) ? `<div style="color:var(--gold);font-size:12px">Buy: ${coins(v.price || item.buy)}</div>` : ''}
+    </div>`).join('');
+
+  document.getElementById('mBody').innerHTML = `
+    <div class="m-hero">
+      <div class="m-ico">
+        ${src ? `<img src="${src}" alt="" onerror="this.style.display='none'">` : '📦'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="m-title">${item.name}</div>
+        <div class="m-sub">${(item.type||[]).join(', ') || 'Item'}
+          ${rn ? `&nbsp;<span class="rar ${rc}">${rn}</span>` : ''}
+        </div>
+        <div class="c-tags">${tags.map(t=>`<span class="tag${t==='Hardmode'?' hm':''}">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="m-body">
+      ${statsHtml ? `<div class="msec">
+        <div class="msec-h">Stats</div>
+        <table class="stbl"><tbody>${statsHtml}</tbody></table>
+      </div>` : ''}
+
+      ${item.tooltip ? `<div class="msec">
+        <div class="msec-h">Tooltip</div>
+        <div class="tip-box">${item.tooltip}</div>
+      </div>` : ''}
+
+      ${item.bonus ? `<div class="msec">
+        <div class="msec-h">Set Bonus</div>
+        <div class="tip-box">${item.bonus}</div>
+      </div>` : ''}
+
+      ${craftsHtml ? `<div class="msec">
+        <div class="msec-h">Crafting (${item.crafts.length})</div>
+        ${craftsHtml}
+      </div>` : ''}
+
+      ${dropsHtml ? `<div class="msec">
+        <div class="msec-h">Obtained From (${item.drops.length})</div>
+        ${dropsHtml}
+      </div>` : ''}
+
+      ${vendorsHtml ? `<div class="msec">
+        <div class="msec-h">Vendors</div>
+        ${vendorsHtml}
+      </div>` : ''}
+
+      <div class="msec">
+        <div class="msec-h">External</div>
+        <a class="wiki-btn" href="${wikiUrl}" target="_blank">📖 Open on terraria.wiki.gg →</a>
+      </div>
+    </div>`;
+
+  document.getElementById('mbg').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('mbg').classList.remove('open');
+}
+document.getElementById('mbg').addEventListener('click', e => {
+  if (e.target === document.getElementById('mbg')) closeModal();
+});
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+// ── NAV ──
+function goPage(dir) {
+  page += dir;
+  render();
+  document.getElementById('main').scrollTo(0,0);
+}
+function jumpPage(v, max) {
+  page = Math.min(max-1, Math.max(0, parseInt(v)-1)) || 0;
+  render();
+  document.getElementById('main').scrollTo(0,0);
+}
+function toggleTag(tag) {
+  activeTags = activeTags.includes(tag) ? activeTags.filter(t=>t!==tag) : [...activeTags, tag];
+  page = 0;
+  render();
+}
+
+// ── SIDEBAR ──
+document.querySelectorAll('.sb-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCat  = btn.dataset.cat;
+    activeTags = [];
+    page       = 0;
+    searchQ    = '';
+    document.getElementById('searchInput').value = '';
+    render();
+  });
+});
+
+// ── SEARCH ──
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchQ = this.value.trim();
+    page = 0;
+    render();
+  }, 160);
+});
+
+// ── INIT ──
+async function init() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    allData = await r.json();
+
+    // Build name lookup
+    allData.forEach(item => { nameMap[item.name] = item; });
+
+    updateCounts();
+    render();
+  } catch(e) {
+    document.getElementById('main').innerHTML = `
+      <div style="padding:40px;color:#f87171;font-weight:700;font-size:14px;line-height:1.8">
+        ⚠ Failed to load data<br>
+        <span style="color:var(--muted);font-size:12px">${e.message}</span><br><br>
+        <span style="color:var(--muted);font-size:12px">
+          Make sure you have internet access and the data URL is reachable.<br>
+          URL: <a href="${DATA_URL}" style="color:var(--blue)">${DATA_URL}</a>
+        </span>
+      </div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
